@@ -1,0 +1,13 @@
+# Forest canopy cover 0-100% (continuous, linear interpolation).
+# ColorBrewer YlGn: bare ground pale/transparent -> dense canopy deep green.
+# value,R,G,B,A
+0,255,255,229,0
+10,247,252,185,110
+20,217,240,163,150
+30,173,221,142,175
+40,120,198,121,190
+50,65,171,93,200
+65,35,132,67,205
+80,0,104,55,210
+100,0,69,41,220
+nv,0,0,0,0

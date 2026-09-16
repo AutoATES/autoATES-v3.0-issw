@@ -1,0 +1,11 @@
+# AutoATES v3.0 ATES classification (categorical, exact match).
+# Adapted-Austrian ATES palette, refreshed to the AvCan designer's 2026-07 hex
+# (colourblind-friendly, intuitive low->high). Non-avalanche = transparent so the
+# Mapbox basemap shows through. Opacity 166 (~65%). value,R,G,B,A
+#   1 Simple #90ef98 · 2 Challenging #00adff · 3 Complex #f15393 · 4 Extreme #b400ff
+0,255,255,255,0
+1,144,239,152,166
+2,0,173,255,166
+3,241,83,147,166
+4,180,0,255,166
+nv,0,0,0,0

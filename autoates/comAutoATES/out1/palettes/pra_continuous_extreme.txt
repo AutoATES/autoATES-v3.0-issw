@@ -1,0 +1,11 @@
+# PRA continuous / start-zone likelihood, EXTREME scenario.
+# AvCan designer ramp: yellow -> orange -> red, hue-shift to magenta at 0.75
+# (elevated) -> deep purple at 1.0 (highest). Straight RGB (channel) lerp, linear
+# domain, floor 0.05 (values below the binary cutoff hidden). Opacity 166.
+# @ramp scale=linear lab=0 per_seg=10 floor=0.05 alpha=166
+0.05,#FFE94A
+0.295,#FFB020
+0.54,#F26419
+0.731,#D62828
+0.75,#C51B8A
+1.0,#4A0072

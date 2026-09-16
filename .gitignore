@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+*.nbc
+*.nbi
+.ipynb_checkpoints/
+.DS_Store
+outputs/
+*.tif
+*.gpkg
+.env
+.venv/

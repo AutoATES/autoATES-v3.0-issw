@@ -1,0 +1,5 @@
+# PRA binary / sieved release area 0|1, extreme (categorical, exact match).
+# 0 transparent; release cells = solid extreme colour. value,R,G,B,A
+0,0,0,0,0
+1,255,20,147,200
+nv,0,0,0,0

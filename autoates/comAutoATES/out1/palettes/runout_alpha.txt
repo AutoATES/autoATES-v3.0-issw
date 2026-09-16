@@ -1,0 +1,16 @@
+# Runout travel angle (alpha), degrees (continuous, linear interpolation).
+# Turbo ramp carried over from the v2.0 FlowPy_Alpha palette: near-source / high
+# travel-angle cells read hot, the low-angle runout toe reads cool. 0 = not
+# reached (transparent). value,R,G,B,A
+0,0,0,0,0
+18,48,18,59,200
+25,70,98,216,200
+28,53,171,248,200
+30,27,229,181,200
+33,116,254,93,200
+36,201,239,52,200
+38,251,185,56,200
+42,245,105,24,200
+48,201,41,3,200
+70,122,4,3,200
+nv,0,0,0,0

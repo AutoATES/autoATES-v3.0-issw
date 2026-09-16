@@ -1,0 +1,11 @@
+# Slope angle, degrees (continuous). AvCan designer's onX / Gaia-style multi-hue
+# ramp: green -> yellow (widened 25-35) -> orange -> red -> purple (40-50) ->
+# indigo (>=50). Below 20 deg hidden. LAB interpolation, linear domain, floor 20.
+# @ramp scale=linear lab=1 per_seg=10 floor=20 alpha=166
+20,#92F955
+30,#FFF75A
+36.5,#DE9849
+39,#EA3525
+45,#8A27DB
+52,#2E1A8A
+90,#2E1A8A

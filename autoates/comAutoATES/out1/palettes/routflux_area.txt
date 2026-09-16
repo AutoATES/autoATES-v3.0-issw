@@ -1,0 +1,13 @@
+# Route flux AREA, contributing area m^2 (continuous, resolution-independent =
+# routFluxSum * cell_area). AvCan designer's flow-intensity ramp (cyan ->
+# turquoise -> azure -> fuchsia -> purple -> deep purple), re-fit to the AREA
+# value range instead of raw routFluxSum. LAB interpolation, LOG domain.
+# Floor 100 m^2 (~pooled p2 across the 6 v3.0 sites, hidden below); saturates at
+# 150,000 m^2 (~pooled p99.5). Stops geometric (~4.3x/step). TUNING TESTBED.
+# @ramp scale=log lab=1 per_seg=12 floor=100 alpha=166
+100,#0CF3FF
+430,#00b7d0
+1850,#0093ff
+7950,#d30098
+34200,#7a0fb8
+150000,#6e14a3

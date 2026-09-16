@@ -1,0 +1,5 @@
+# PRA binary / sieved release area 0|1, frequent (categorical, exact match).
+# 0 transparent; release cells = solid frequent colour. value,R,G,B,A
+0,0,0,0,0
+1,0,178,169,200
+nv,0,0,0,0

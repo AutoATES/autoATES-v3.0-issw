@@ -1,0 +1,20 @@
+# Library env for autoATES v3.0 (ISSW snapshot).
+# Workshop participants: use the workshop repo environment.yml instead.
+name: autoates-v3-issw
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - numpy
+  - scipy
+  - rasterio
+  - geopandas
+  - gdal
+  - numba
+  - matplotlib
+  - pandas
+  - shapely
+  - scikit-image
+  - psutil
+  - pyyaml
+  - tqdm
