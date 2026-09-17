@@ -4,9 +4,9 @@ Public library snapshot of **autoATES v3.0** for the ISSW 2026 workshop
 in Whistler. Default settings are the ISSW / western Canada working
 version presented in the papers.
 
-This is **not** the development repository. Calibration sweeps, site
-batches, and unpublished experiments stay private while that tree is
-still being tested. See [SOURCE.md](SOURCE.md).
+This is a snapshot of the library, not the development repository.
+Calibration sweeps, site batches, and unpublished experiments stay
+private while that tree is still being tested. See [SOURCE.md](SOURCE.md).
 
 Hands-on notebooks and the Connaught Creek data live in
 [issw2026-autoates-workshop](https://github.com/AutoATES/issw2026-autoates-workshop).
@@ -55,10 +55,11 @@ Optional, still “local data” rather than “new model”:
 | `[FlowPy] engine` | `numba` if installed (much faster); otherwise `python` |
 | `[FlowPy] tile_size` | Raise if a large domain runs out of memory |
 
-## What not to change without a validation set
+## What to leave as the ISSW defaults
 
-These **are** the ISSW model. Retuning them to “look more like my map”
-is a different model, not autoATES v3.0.
+These values are the working model in the papers. Changing them so the
+map looks more like a local drawing is a different parameterization, and
+it needs a validation set.
 
 - `[PRA]` Cauchy parameters and typical/infrequent thresholds
 - `[PRA] enable_ruggedness` — leave `False` on ~30 m ALOS. It is
@@ -67,10 +68,10 @@ is a different model, not autoATES v3.0.
 - `[FlowPy] frequent_alpha` / `extreme_alpha` (30° / 18°)
 - `[ATES]` floors and class thresholds
 
-If your snow climate or forest is unlike western Canada, say so in the
-map metadata and keep these defaults until you have evidence. The
-workshop take-home is: **calibration lives in the two scenarios, not in
-retuned class breaks.**
+If your snow climate or forest is unlike western Canada, note that on
+the map and keep these defaults until you have evidence to change them.
+The design idea we want people to take home is that regional calibration
+lives in the two scenarios, not in retuned class breaks.
 
 ## Citation
 
