@@ -13,3 +13,4 @@ the ISSW 2026 workshop. It is not the development tree.
 Site-batch configs, calibration sweeps, and unpublished experiments were
 left out on purpose. Parameters here are the ISSW working version
 (typical + infrequent PRA, ruggedness off, Flow-Py α 30° / 18°).
+The snapshot of `adb83f6` left dev8 off the pipeline call. This tree runs it.

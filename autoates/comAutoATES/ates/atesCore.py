@@ -1,6 +1,9 @@
 """
 atesCore.py - ATES terrain classification for autoATES v3.0 (multi-scenario).
 
+The default model is dev8 (ates/dev8.py): split votes, then reach floors, then a
+class-0 ceiling. `ATES.model = legacy` still runs `_classify` below.
+
 Consumes the aligned, multi-scenario driver stack (driverStack.build_driver_stack)
 and produces an ATES 0-4 classification. Restructured from the v2.10 port:
 
@@ -29,8 +32,9 @@ import configparser
 import numpy as np
 import rasterio
 
-from autoates.comAutoATES.ates.driverStack import build_driver_stack, NODATA
+from autoates.comAutoATES.ates.driverStack import build_driver_stack, NODATA, _align
 from autoates.comAutoATES.ates.atesPostProcess import postprocess_ates, get_postprocess_params
+from autoates.comAutoATES.ates.dev8 import classify as dev8_classify
 
 logger = logging.getLogger(__name__)
 
@@ -197,6 +201,153 @@ def _classify_pra_base(stack, freq, ext, az, rf, prox, overhead4, wind, p):
 
 
 # ---------------------------------------------------------------------------
+# dev8 (default). Legacy PRA-base rules stay in _classify.
+# ---------------------------------------------------------------------------
+def _scenario_token(path: Path):
+    name = Path(path).name
+    for scen in ("frequent", "extreme"):
+        if name.startswith(f"pra_{scen}_"):
+            return scen
+    return None
+
+
+def _sibling(pra: dict, filename: str):
+    """A file next to the scenario's continuous or sieve raster."""
+    for key in ("continuous", "sieve"):
+        raw = pra.get(key)
+        if not raw:
+            continue
+        candidate = Path(raw).parent / filename
+        if candidate.exists():
+            return candidate
+    return None
+
+
+def _rasterize_pra_size(pra: dict, stack):
+    """Burn each start-zone polygon's area_ha onto the DEM grid.
+
+    Returns None when the polygon file is missing. The size vote is then
+    skipped rather than invented.
+    """
+    token = None
+    for key in ("continuous", "sieve"):
+        raw = pra.get(key)
+        if raw:
+            token = _scenario_token(raw)
+            if token:
+                break
+    if token is None:
+        logger.info("dev8: PRA paths have no scenario name; size vote skipped")
+        return None
+    gpkg = _sibling(pra, f"pra_{token}_poly_v1.gpkg")
+    if gpkg is None:
+        logger.info("dev8: no pra_%s_poly_v1.gpkg; size vote skipped", token)
+        return None
+    try:
+        import geopandas as gpd
+        from rasterio.crs import CRS
+        from rasterio.features import rasterize
+    except ImportError as exc:
+        logger.warning("dev8: cannot rasterize %s (%s); size vote skipped", gpkg.name, exc)
+        return None
+    gdf = gpd.read_file(gpkg)
+    if gdf.empty or "area_ha" not in gdf.columns:
+        logger.warning("dev8: %s has no area_ha; size vote skipped", gpkg.name)
+        return None
+    dst_crs = stack.profile.get("crs")
+    if gdf.crs is not None and dst_crs is not None:
+        dst = CRS.from_user_input(dst_crs)
+        if CRS.from_user_input(gdf.crs) != dst:
+            gdf = gdf.to_crs(dst)
+    shapes = []
+    for geom, val in zip(gdf.geometry, gdf["area_ha"]):
+        if geom is None or geom.is_empty:
+            continue
+        shapes.append((geom, 0.0 if val is None or val != val else float(val)))
+    height, width = stack.slope.shape
+    burned = rasterize(
+        shapes, out_shape=(height, width), transform=stack.transform,
+        fill=0.0, dtype="float32")
+    logger.info("dev8: %s size vote, %.1f ha of start zone on the grid",
+                token, float((burned > 0).sum() * stack.cell_area / 10000.0))
+    return burned
+
+
+def _distance_layer(arr: np.ndarray) -> np.ndarray:
+    """Metres. Negative and nodata read as far away, not as 'inside the hazard'."""
+    out = np.asarray(arr, dtype="float32")
+    bad = ~np.isfinite(out) | (out < 0) | (out == NODATA)
+    out = out.copy()
+    out[bad] = np.float32(1.0e4)
+    return out
+
+
+def _classify_dev8(stack, ates_dir, pra_by_scenario) -> Path:
+    freq = stack.scenarios.get("frequent")
+    ext = stack.scenarios.get("extreme")
+    if ext is None or freq is None:
+        logger.warning("dev8: only one scenario in the stack; both roles use it")
+    if ext is None:
+        ext = freq
+    if freq is None:
+        freq = ext
+    if freq is None:
+        raise ValueError("ATES dev8: no scenarios in driver stack")
+    for role, layers in (("frequent", freq), ("extreme", ext)):
+        if layers.zdelta is None or layers.rout_flux_area is None:
+            raise RuntimeError(
+                f"ATES dev8: scenario '{role}' is missing ungated zdelta or rout_flux_area")
+
+    valid = stack.valid_mask
+    canopy = np.where(stack.forest_pct == NODATA, 0, stack.forest_pct).astype(np.float32)
+    slope = np.where(valid, stack.slope.astype(np.float32), 0.0)
+    if valid.any() and float(np.nanmax(canopy[valid])) > 100.5:
+        logger.warning(
+            "ATES dev8: canopy exceeds 100 (max %.1f). It should already be percent.",
+            float(np.nanmax(canopy[valid])))
+
+    def _pra(layers):
+        if layers.pra_continuous is None:
+            return np.zeros(slope.shape, dtype=np.float32)
+        return layers.pra_continuous.astype(np.float32)
+
+    model_layers = {
+        "E_pra": _pra(ext),
+        "F_pra": _pra(freq),
+        "E_zdelta": ext.zdelta.astype(np.float32),
+        "F_zdelta": freq.zdelta.astype(np.float32),
+        "E_travel_angle": ext.fp_travel_angle.astype(np.float32),
+        "F_travel_angle": freq.fp_travel_angle.astype(np.float32),
+        "E_rout_flux_area": ext.rout_flux_area.astype(np.float32),
+        "F_rout_flux_area": freq.rout_flux_area.astype(np.float32),
+        "E_runout_prox": _distance_layer(ext.runout_prox),
+    }
+    for scen, tag in (("frequent", "F"), ("extreme", "E")):
+        pra = pra_by_scenario.get(scen, {})
+        size = _rasterize_pra_size(pra, stack)
+        if size is not None:
+            model_layers[f"{tag}_pra_size"] = size
+    extreme_pra = pra_by_scenario.get("extreme", {})
+    prox_path = _sibling(extreme_pra, "pra_extreme_pra_proximity.tif")
+    if prox_path is None:
+        logger.info("dev8: no extreme PRA proximity raster; that class-0 factor is omitted")
+    else:
+        aligned = _align(prox_path, stack.profile, fill=1.0e4,
+                         resampling=rasterio.warp.Resampling.nearest)
+        model_layers["E_pra_proximity"] = _distance_layer(aligned)
+
+    cell = float(np.sqrt(stack.cell_area))
+    classes = dev8_classify(model_layers, valid, slope, canopy, cell)
+    # classes is int8. A where() against that dtype wraps -9999 to -15.
+    out = np.full(classes.shape, NODATA, dtype=np.int16)
+    keep = classes >= 0
+    out[keep] = classes[keep]
+    merge2_path = _write(out, stack.profile, ates_dir / "merge_2.tif")
+    logger.info("ATES dev8 merge_2 classes: %s (cell %.2f m)", np.unique(out[valid]), cell)
+    return merge2_path
+
+
+# ---------------------------------------------------------------------------
 # Params + public entry point
 # ---------------------------------------------------------------------------
 def _get_params(config: configparser.ConfigParser) -> dict:
@@ -262,7 +413,14 @@ def run_ates_classification(
     stack = build_driver_stack(dem_path, forest_path, runout_by_scenario,
                                pra_by_scenario, ates_dir, params)
 
-    merge2_path = _classify(stack, params, ates_dir, wind_deposits_path)
+    model = config.get("ATES", "model", fallback="dev8").strip().lower()
+    logger.info("ATES model: %s", model)
+    if model == "legacy":
+        merge2_path = _classify(stack, params, ates_dir, wind_deposits_path)
+    elif model == "dev8":
+        merge2_path = _classify_dev8(stack, ates_dir, pra_by_scenario)
+    else:
+        raise ValueError(f"ATES.model must be 'dev8' or 'legacy', got {model!r}")
 
     # Shared post-processing for all classifiers: MMU cleanup + polygons + colour.
     results = postprocess_ates(merge2_path, ates_dir, params, aoi_path=aoi_path)

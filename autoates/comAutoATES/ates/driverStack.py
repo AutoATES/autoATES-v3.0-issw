@@ -54,6 +54,8 @@ class ScenarioLayers:
     pra: np.ndarray               # 1 in release area, else 0 (int16)
     forest_interaction: np.ndarray = None  # com4FlowPy forestInteraction, 0 where none (float32)
     pra_continuous: np.ndarray = None      # PRA susceptibility 0-1, 0 where none (float32)
+    zdelta: np.ndarray = None              # elevation drop, m; 0 where unreached (float32)
+    rout_flux_area: np.ndarray = None      # routFluxSum * cell area, m^2, ungated (float32)
 
 
 @dataclass
@@ -196,6 +198,8 @@ def _build_scenario(name: str, runout: dict, pra: dict, ref: dict,
         pra=pra_mask,
         forest_interaction=forest_int,
         pra_continuous=pra_cont,
+        zdelta=zdelta.astype(np.float32),
+        rout_flux_area=contrib_area.astype(np.float32),
     )
 
 
