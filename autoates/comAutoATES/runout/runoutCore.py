@@ -60,6 +60,10 @@ def _build_flowpy_config(dem_path: Path, release_path: Path, forest_path: Path,
     gen["skipForestDist"] = str(config.getfloat(fp, "skip_forest_dist", fallback=0.0))
     gen["tileSize"] = str(config.getint(fp, "tile_size", fallback=15000))
     gen["tileOverlap"] = str(config.getint(fp, "tile_overlap", fallback=5000))
+    # Flow-Py's pool.map keeps ~11 full-tile float32 result arrays per chunk until every chunk is done, so peak
+    # RAM ~ maxChunks x 44 B x tile cells (500 chunks on a 190 km2 10 m box: ~40 GB). Chunks only partition the
+    # release cells, so fewer chunks give the same result with less RAM.
+    gen["maxChunks"] = str(config.getint(fp, "max_chunks", fallback=gen.getint("maxChunks", 500)))
     # compute engine: "numba" (JIT kernel, default) or "python" (reference).
     # The numba engine is bit-identical to python at 21.3 m (verified 2026-08-28 on
     # Chickadee: 0 differing px on zdelta/routFluxSum/fpTravelAngleMax/cellCounts,
